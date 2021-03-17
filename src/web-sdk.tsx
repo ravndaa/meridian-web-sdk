@@ -573,8 +573,8 @@ export interface OpenStreamOptions {
   locationID: string;
   /** Meridian floor ID */
   floorID: string;
-  //seconds to wait before update objects.
-  secondsbeforeupdate?: number
+
+
   /** Called with ALL tags on first load */
   onInitialTags?: (tags: TagData[]) => void;
   /** Called when a tag exits the floor */
@@ -791,7 +791,6 @@ export class API {
   openStream({
     locationID,
     floorID,
-    secondsbeforeupdate,
     onInitialTags = () => {},
     onTagLeave = () => {},
     onTagUpdate = () => {},
@@ -855,9 +854,9 @@ export class API {
         return;
       }
       // check and wait x seconds before updating objects.
-      if (secondsbeforeupdate === undefined) secondsbeforeupdate = 0;
+      
       const millis = Date.now() - lastUpdated;
-      if (Math.floor(millis / 1000) <= secondsbeforeupdate) {
+      if (Math.floor(millis / 1000) <= 5) {
         return;
       }
       if (data.result) {
