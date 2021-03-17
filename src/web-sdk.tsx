@@ -573,6 +573,8 @@ export interface OpenStreamOptions {
   locationID: string;
   /** Meridian floor ID */
   floorID: string;
+  //seconds to wait before update objects.
+  secondsbeforeupdate?: number
   /** Called with ALL tags on first load */
   onInitialTags?: (tags: TagData[]) => void;
   /** Called when a tag exits the floor */
@@ -789,11 +791,12 @@ export class API {
   openStream({
     locationID,
     floorID,
+    secondsbeforeupdate,
     onInitialTags = () => {},
     onTagLeave = () => {},
     onTagUpdate = () => {},
     onException = () => {},
-    onClose = () => {}
+    onClose = () => { }
   }: OpenStreamOptions): Stream {
     if (!locationID) {
       requiredParam("openStream", "locationID");
@@ -801,6 +804,8 @@ export class API {
     if (!floorID) {
       requiredParam("openStream", "floorID");
     }
+    // time since last objects last updated.
+    let lastUpdated = Date.now();
     let isClosed = false;
     const params = new URLSearchParams({
       method: "POST",
@@ -849,6 +854,12 @@ export class API {
         onException(new Error(data.error.message));
         return;
       }
+      // check and wait x seconds before updating objects.
+      if (secondsbeforeupdate === undefined) secondsbeforeupdate = 0;
+      const millis = Date.now() - lastUpdated;
+      if (Math.floor(millis / 1000) <= secondsbeforeupdate) {
+        return;
+      }
       if (data.result) {
         for (const assetUpdate of data.result.asset_updates) {
           const eventType = assetUpdate.event_type;
@@ -860,6 +871,8 @@ export class API {
             throw new Error(`Unknown event type: ${eventType}`);
           }
         }
+        //we got so far, we update lastupdate field.
+        lastUpdated = Date.now();
         return;
       }
       throw new Error(`Unknown message: ${event.data}`);
